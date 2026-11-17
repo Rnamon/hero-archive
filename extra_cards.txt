@@ -1,0 +1,54 @@
+# Cards you chose to add by name. Format:  Name | support   or   Name | related
+# Source: the HERO navigation lists on yugioh.fandom.com/wiki/HERO (copied by Gad, 2026-11-17).
+# The data (printings, dates, art) still comes only from YGOPRODeck. A name it does not know is reported and skipped.
+# To drop a card from the app: use "Don't count" in the app, or delete its line here.
+
+# --- Support ---
+Mask Change | support
+Mask Charge | support
+Favorite Contact | support
+Dark Supremacy | support
+Evil Assault | support
+Armed Neos | support
+D - Burst | support
+Break the Destiny | support
+Dark City at Midnight | support
+Doctor D | support
+Cross Keeper | support
+EN - Engage Neo Space | support
+EN Shuffle | support
+EN Wave | support
+Get Your Game On! | support
+Instant Contact | support
+Over Fusion | support
+Protection of the Elements | support
+Soul Union | support
+Winged Kuriboh Sabatiel LV10 | support
+Hero's Rule 1: Five Freedoms | support
+
+# --- Related ---
+Dark Calling | related
+Dark Fusion | related
+Dark Contact | related
+Vicious Claw | related
+D - Force | related
+H - Heated Heart | related
+Eternal Dread | related
+Metamorphosis | related
+Miracle Kids | related
+Battle of Sleeping Spirits | related
+Card Ejector | related
+Polymerization | related
+Yubel | related
+Rainbow Dragon | related
+Rainbow Dark Dragon | related
+UFOroid Fighter | related
+Honest | related
+Hero Kid | related
+Neo-Spacian Air Hummingbird | related
+Neo-Spacian Aqua Dolphin | related
+Neo-Spacian Dark Panther | related
+Neo-Spacian Flare Scarab | related
+Neo-Spacian Glow Moss | related
+Neo-Spacian Grand Mole | related
+Neo-Spacian Marine Dolphin | related
