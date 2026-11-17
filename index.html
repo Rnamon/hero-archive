@@ -40,6 +40,8 @@ button.row:hover{border-color:var(--gold)}
 .ctrl{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
 .ctrl input,.ctrl select,textarea{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
 .ctrl input[type=search]{flex:1;min-width:180px}
+.ctrl select{max-width:100%;min-width:0;text-overflow:ellipsis}
+#fset{flex:1 1 100%}
 .btn{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:7px 12px}
 .btn:hover{border-color:var(--gold)}
 .btn.primary{background:var(--gold);color:#1a1405;border-color:var(--gold);font-weight:600}
@@ -52,11 +54,11 @@ th,td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;vertic
 th{color:var(--mute);font-weight:500;font-size:12px}
 .tw{overflow-x:auto}
 .qty{display:inline-flex;align-items:center;gap:6px}
-.qty button{width:30px;height:30px;border-radius:8px;border:1px solid var(--line);background:var(--panel2)}
+.qty button{width:40px;height:40px;font-size:18px;border-radius:8px;border:1px solid var(--line);background:var(--panel2)}
 .qty b{min-width:20px;text-align:center}
 #modal{position:fixed;inset:0;background:rgba(3,6,14,.78);display:none;align-items:flex-start;justify-content:center;overflow-y:auto;z-index:20;padding:20px 10px}
 #modal.open{display:flex}
-.sheet{background:var(--bg);border:1px solid var(--line);border-radius:14px;width:100%;max-width:820px;padding:16px}
+.sheet{min-width:0;background:var(--bg);border:1px solid var(--line);border-radius:14px;width:100%;max-width:820px;padding:16px}
 .sheet .top{display:flex;gap:10px;align-items:flex-start}
 .sheet .top h2{flex:1;margin:0}
 .desc{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;white-space:pre-wrap;overflow-wrap:anywhere}
@@ -74,6 +76,11 @@ summary{cursor:pointer;color:var(--blue)}
 :focus-visible{outline:2px solid var(--blue);outline-offset:2px}
 label.chk{display:flex;gap:8px;align-items:flex-start;margin:8px 0}
 label.chk input{margin-top:4px}
+.prow{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.prow .grow{flex:1;min-width:0}
+.prow .t{font-weight:600;overflow-wrap:anywhere}
+.prow .m{color:var(--mute);font-size:13px;overflow-wrap:anywhere;margin-bottom:4px}
+nav button,.btn{min-height:38px}
 </style>
 </head>
 <body>
@@ -420,10 +427,11 @@ function openCard(id) {
       <button class="btn ${o === 'out' ? 'off' : ''}" data-ov="${c.id}:out">Don't count</button>
       <button class="btn" data-ov="${c.id}:">Default</button></p>
     <p>${d.first ? 'First released English printing: <b>' + esc(d.first.date) + '</b> (' + esc(d.first.set) + ')' : 'No counted printing for this card.'}</p>
-    <div class="tw"><table><thead><tr><th>Set</th><th>Code</th><th>Rarity</th><th>Set date</th><th>Status</th><th>Owned</th></tr></thead><tbody>
-    ${prs.map(p => { const s = pStatus(p), l = STATUS_LABEL[s]; return `<tr><td>${esc(p.set)}</td><td>${esc(p.code)}</td><td>${esc(p.rar)}${p.rc ? ' ' + esc(p.rc) : ''}</td><td>${p.date ? esc(p.date) : '—'}</td>
-      <td><span class="badge ${l[1]}">${l[0]}</span></td><td><span class="qty"><button data-q="${esc(p.key)}:-1" aria-label="Remove one">−</button><b>${qty(p)}</b><button data-q="${esc(p.key)}:1" aria-label="Add one">+</button></span></td></tr>`; }).join('') || '<tr><td colspan="6" class="note">No TCG printing in the data file.</td></tr>'}
-    </tbody></table></div>
+    <div>
+    ${prs.map(p => { const s = pStatus(p), l = STATUS_LABEL[s]; return `<div class="prow"><div class="grow"><div class="t">${esc(p.set)}</div>
+      <div class="m">${esc(p.code)} · ${esc(p.rar)}${p.rc ? ' ' + esc(p.rc) : ''} · ${p.date ? esc(p.date) : 'no date'}</div><span class="badge ${l[1]}">${l[0]}</span></div>
+      <span class="qty"><button data-q="${esc(p.key)}:-1" aria-label="Remove one">−</button><b>${qty(p)}</b><button data-q="${esc(p.key)}:1" aria-label="Add one">+</button></span></div>`; }).join('') || '<p class="note">No TCG printing in the data file.</p>'}
+    </div>
     <p><a href="${esc(c.url)}" target="_blank" rel="noopener noreferrer">Open on YGOPRODeck</a></p>`;
   $('#modal').classList.add('open'); $('#x').focus();
 }
