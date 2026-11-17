@@ -8,6 +8,7 @@ Run it on your own computer or in GitHub Actions, then run build_data.py.
 """
 import json
 import os
+import re
 import sys
 import time
 import urllib.error
@@ -51,10 +52,45 @@ def main(outdir):
             merged[c["id"]] = c
     if not merged:
         sys.exit("No cards downloaded - keeping the old files.")
+    root = os.path.dirname(os.path.abspath(outdir))
+    fetch_extras(merged, os.path.join(root, "extra_cards.txt"), outdir)
     with open(os.path.join(outdir, "cardinfo.json"), "w", encoding="utf-8") as f:
         json.dump({"data": list(merged.values())}, f, ensure_ascii=False)
     print("total unique cards:", len(merged))
     download_images(merged.values(), os.path.join(os.path.dirname(os.path.abspath(outdir)), "images"))
+
+
+def _norm(s):
+    return re.sub(r"[^a-z0-9]+", " ", s.lower()).strip()
+
+
+def fetch_extras(merged, path, outdir):
+    """Cards named in extra_cards.txt that the archetype queries did not return."""
+    names = []
+    try:
+        with open(path, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#") and "|" in line:
+                    names.append(line.rsplit("|", 1)[0].strip())
+    except OSError:
+        return
+    have = {_norm(c["name"]) for c in merged.values()}
+    missing = []
+    for name in names:
+        if _norm(name) in have:
+            continue
+        time.sleep(PAUSE)
+        res = get(BASE + "cardinfo.php?" + urllib.parse.urlencode({"fname": name}))
+        hits = [c for c in (res or {}).get("data", []) if _norm(c["name"]) == _norm(name)]
+        if hits:
+            merged[hits[0]["id"]] = hits[0]
+            have.add(_norm(name))
+        else:
+            missing.append(name)
+    print(f"extra names: {len(names)} listed, {len(missing)} not found in the database")
+    with open(os.path.join(outdir, "extra_not_found.txt"), "w", encoding="utf-8") as f:
+        f.write("\n".join(missing))
 
 
 def download_images(cards, imgdir):

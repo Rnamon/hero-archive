@@ -26,6 +26,27 @@ EN_SUFFIX = re.compile(r"^(?:EN[A-Z]*|E)?\d+$")        # IOC-104, LON-E059, BP02
 DATE_FULL = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 
+def norm(s):
+    return re.sub(r"[^a-z0-9]+", " ", s.lower()).strip()
+
+
+def load_extras(path):
+    """extra_cards.txt -> {normalised name: 'support' | 'related'}"""
+    out = {}
+    try:
+        with open(path, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith("#") or "|" not in line:
+                    continue
+                name, group = [x.strip() for x in line.rsplit("|", 1)]
+                if group in ("support", "related"):
+                    out[norm(name)] = group
+    except OSError:
+        pass
+    return out
+
+
 def load_cards(paths):
     merged = {}
     for p in paths:
@@ -37,8 +58,16 @@ def load_cards(paths):
     return list(merged.values())
 
 
-def classify(c):
+def classify(c, extras=None):
     name, arch, desc = c["name"], c.get("archetype"), c.get("desc", "")
+    cat, why = classify_rules(name, arch, desc)
+    g = (extras or {}).get(norm(name))
+    if g and cat != "hero":      # a real HERO archetype card stays "hero"
+        return g, "on your list (wiki): HERO " + ("support" if g == "support" else "related card")
+    return cat, why
+
+
+def classify_rules(name, arch, desc):
     if TOKEN_HERO.search(name):
         return "hero", 'name has the word HERO'
     if arch in HERO_ARCHETYPES:
@@ -52,7 +81,7 @@ def classify(c):
     return "noise", 'no HERO word in the name and no HERO archetype'
 
 
-def build(card_paths, sets_path):
+def build(card_paths, sets_path, extras=None):
     cards = load_cards(card_paths)
     with open(sets_path, encoding="utf-8") as f:
         sets_raw = json.load(f)
@@ -62,7 +91,7 @@ def build(card_paths, sets_path):
 
     out_cards, used_sets, warnings = [], {}, []
     for c in sorted(cards, key=lambda x: x["name"].lower()):
-        cat, why = classify(c)
+        cat, why = classify(c, extras)
         printings = []
         for p in c.get("card_sets", []):
             sname, code = p["set_name"], p["set_code"]
@@ -104,10 +133,11 @@ def main():
     ap.add_argument("--cards", action="append", required=True)
     ap.add_argument("--sets", required=True)
     ap.add_argument("--out", required=True)
+    ap.add_argument("--extras", default="extra_cards.txt")
     ap.add_argument("--html", help="index.html whose embedded snapshot should be refreshed")
     a = ap.parse_args()
 
-    cards, used_sets, warnings, n_sets_file = build(a.cards, a.sets)
+    cards, used_sets, warnings, n_sets_file = build(a.cards, a.sets, load_extras(a.extras))
     data = {
         "schema": 1,
         "generated_at": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
