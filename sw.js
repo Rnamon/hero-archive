@@ -1,5 +1,5 @@
 // Offline support. Bump CACHE when this file changes.
-const CACHE = 'hero-archive-v1';
+const CACHE = 'hero-archive-v2';
 const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png'];
 
 self.addEventListener('install', e => {

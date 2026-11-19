@@ -101,6 +101,7 @@ nav button,.btn{min-height:38px}
 <script>
 'use strict';
 /* ---------- helpers ---------- */
+const APP_VERSION = 'v1.1 · 2026-11-19';
 const $ = (s, r = document) => r.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const pad = n => String(n).padStart(2, '0');
@@ -199,17 +200,21 @@ function checkNew() {
 }
 
 /* ---------- navigation ---------- */
-const TABS = [['dash','Dashboard'],['cards','Cards'],['sets','Sets'],['review','Review'],['data','Data & backup']];
+const TABS = [['dash','Dashboard'],['cards','Cards'],['sets','Sets'],['data','Data & backup']];
 function renderNav() {
   $('#nav').innerHTML = TABS.map(([k, l]) => `<button data-tab="${k}" ${S.tab === k ? 'aria-current="page"' : ''}>${l}</button>`).join('');
 }
 $('#nav').addEventListener('click', e => { const b = e.target.closest('button[data-tab]'); if (b) go(b.dataset.tab); });
-function go(tab) { S.tab = tab; render(); window.scrollTo(0, 0); }
+function cur() { return history.state || { tab: 'dash' }; }
+function go(tab) {
+  if (tab !== S.tab) { history.replaceState(Object.assign({}, cur(), { y: window.scrollY }), ''); history.pushState({ tab }, ''); }
+  S.tab = tab; render(); window.scrollTo(0, 0);
+}
 function render() {
   renderNav();
   const v = $('#view');
-  ({ dash: viewDash, cards: viewCards, sets: viewSets, review: viewReview, data: viewData })[S.tab](v);
-  $('#sub').textContent = S.cards.length + ' cards in the data file · today ' + TODAY;
+  ({ dash: viewDash, cards: viewCards, sets: viewSets, data: viewData })[S.tab](v);
+  $('#sub').textContent = 'App ' + APP_VERSION + ' · ' + S.cards.length + ' cards · data built ' + String(S.data.generated_at || '').slice(0, 10);
 }
 
 /* ---------- dashboard ---------- */
@@ -339,14 +344,11 @@ function reviewRows(cat) {
       <button class="btn ${store.over[c.id] === 'out' ? 'off' : ''}" data-ov="${c.id}:out">Don't count</button>
       <button class="btn" data-ov="${c.id}:">Default</button></div>`).join('') || '<p class="note">None.</p>';
 }
-function viewReview(v) {
-  const n = k => S.cards.filter(c => c.cat === k).length;
-  v.innerHTML = `<h2>Review</h2><p class="note">The page sorts cards by simple rules. Your choices here are saved in this browser and included in the backup.</p>
-    <h3>Added from your wiki list: Support (${n('support')})</h3><p class="note">Cards named in <code>extra_cards.txt</code> under Support. Counted by default. Press “Don't count” on any card that is not really related — it disappears from your lists and progress.</p>${reviewRows('support')}
-    <h3>Added from your wiki list: Related (${n('related')})</h3><p class="note">Related cards (Neo-Spacians, Polymerization, and so on). Counted by default; you can switch the whole group off in Data &amp; backup, or card by card here.</p>${reviewRows('related')}
-    <h3>Found by the audit: text mentions HERO (${n('mention')})</h3><p class="note">English-printed cards that are not in a HERO archetype but whose text mentions HERO, plus Neo-Spacian/Neos cards. Not counted until you press “Count” or switch the group on in Data &amp; backup.</p>${reviewRows('mention')}
-    <h3>Needs your decision (${n('review')})</h3><p class="note">These have the word “Hero” in the name, or their effect mentions a HERO card, but they are not in a HERO archetype in the data.</p>${reviewRows('review')}
-    <h3>Probably not HERO (${n('noise')})</h3><p class="note">No HERO word as a word in the name and no HERO archetype — most likely in the file only because the name contains the letters “hero” or “hire”.</p>${reviewRows('noise')}`;
+function offRows() {
+  const off = S.cards.filter(c => !inScope(c)).sort((a, b) => a.name.localeCompare(b.name));
+  return off.length ? off.map(c => `<div class="row"><div class="grow"><div class="t"><button class="badge gold" data-open="${c.id}">${esc(c.name)}</button></div>
+      <div class="m">${esc(c.why)}${c.arch ? ' · archetype ' + esc(c.arch) : ''}</div></div>
+      <button class="btn on" data-ov="${c.id}:in">Count</button></div>`).join('') : '<p class="note">Every card in the file is counted.</p>';
 }
 
 /* ---------- data & backup ---------- */
@@ -360,13 +362,15 @@ function viewData(v) {
       <label class="chk"><input type="checkbox" data-set="support" ${s.support ? 'checked' : ''}><span>Count wiki “Support” cards that you added by name (${cats.support || 0})</span></label>
       <label class="chk"><input type="checkbox" data-set="related" ${s.related ? 'checked' : ''}><span>Count wiki “Related” cards that you added by name (${cats.related || 0})</span></label>
       <label class="chk"><input type="checkbox" data-set="mention" ${s.mention ? 'checked' : ''}><span>Count cards found by the audit whose text mentions HERO (${cats.mention || 0})</span></label>
-      <label class="chk"><input type="checkbox" data-set="review" ${s.review ? 'checked' : ''}><span>Count the cards that need review (${cats.review || 0}) — decide them one by one in Review instead if you prefer</span></label>
+      <label class="chk"><input type="checkbox" data-set="review" ${s.review ? 'checked' : ''}><span>Count the cards that need review (${cats.review || 0}) — or decide them one by one in the list below</span></label>
       <label class="chk"><input type="checkbox" data-set="speed" ${s.speed ? 'checked' : ''}><span>Count Speed Duel printings (English, but a separate product line)</span></label></div>
+    <h3>Cards not counted (${S.cards.filter(c => !inScope(c)).length})</h3>
+    <div class="panel"><p class="note">Cards you switched off, and cards the page is unsure about. Press “Count” to bring one back. To switch a card off, open it from the Cards list and press “Don't count”.</p>${offRows()}</div>
     <h3>Where this data comes from</h3>
     <div class="panel"><ul class="plain">
       <li>Loaded from: <b>${esc(S.source)}</b>${S.fetchNote ? ' <span class="note">(' + esc(S.fetchNote) + ')</span>' : ''}</li>
       <li>Data file built: <b>${esc(d.generated_at)}</b> · rules ${esc(d.rule_version)}</li>
-      <li>Cards in the file: <b>${S.cards.length}</b> (HERO ${cats.hero || 0}, wiki support ${cats.support || 0}, wiki related ${cats.related || 0}, audit candidates ${cats.mention || 0}, Heroic ${cats.heroic || 0}, needs review ${cats.review || 0}, probably not HERO ${cats.noise || 0})</li>
+      <li>Cards in the file: <b>${S.cards.length}</b> (HERO ${cats.hero || 0}, wiki support ${cats.support || 0}, wiki related ${cats.related || 0}, audit candidates ${cats.mention || 0}, needs review ${cats.review || 0}, probably not HERO ${cats.noise || 0})</li>
       <li>Printings: <b>${tp}</b> — released ${st.released || 0}, upcoming ${st.upcoming || 0}, date unknown ${st.unknown || 0}, Speed Duel ${st.speed || 0}, not English ${st.excluded || 0}</li>
       <li>Sets used: <b>${Object.keys(d.sets).length}</b> of ${d.source.sets_in_file} in the sets file</li>
       <li>Cards with no printing at all in the data: <b>${noPr.length}</b>${noPr.length ? ' — ' + noPr.map(c => esc(c.name)).join(', ') : ''}</li></ul>
@@ -441,15 +445,25 @@ function openCard(id) {
   $('#modal').classList.add('open'); $('#x').focus();
 }
 function openLb(a) { const lb = $('#lb'); lb.innerHTML = `<img src="images/large/${a}.jpg" alt="Large card image" onerror="this.replaceWith(document.createTextNode('Large image file not found.'))"><span>Click anywhere or press Esc to close</span>`; lb.classList.add('open'); }
-function closeLb() { $('#lb').classList.remove('open'); }
-function closeCard() { $('#modal').classList.remove('open'); if (lastFocus && lastFocus.focus) lastFocus.focus(); }
+function hideLb() { $('#lb').classList.remove('open'); }
+function closeLb() { if (cur().lb) history.back(); else hideLb(); }
+function hideCard() { const was = $('#modal').classList.contains('open'); $('#modal').classList.remove('open'); if (was && lastFocus && lastFocus.focus) lastFocus.focus(); }
+function closeCard() { if (cur().card != null) history.back(); else hideCard(); }
+function openCardNav(id) { history.pushState({ tab: S.tab, card: id }, ''); openCard(id); }
+function openLbNav(a) { history.pushState({ tab: S.tab, card: cur().card, lb: a }, ''); openLb(a); }
+window.addEventListener('popstate', e => {
+  const st = e.state || { tab: 'dash' };
+  if (st.tab !== S.tab) { S.tab = st.tab; render(); window.scrollTo(0, st.y || 0); }
+  if (st.card != null) { if (!$('#modal').classList.contains('open') || (openId() || {}).id !== st.card) openCard(st.card); } else hideCard();
+  if (st.lb) openLb(st.lb); else hideLb();
+});
 function openId() { const t = $('#sheet h2'); return t ? S.cards.find(c => c.name === t.textContent) : null; }
 
 /* ---------- global clicks ---------- */
 document.addEventListener('click', e => {
   const t = e.target;
   if ($('#lb').classList.contains('open')) return closeLb();
-  const zm = t.closest('[data-zoom]'); if (zm) return openLb(zm.dataset.zoom);
+  const zm = t.closest('[data-zoom]'); if (zm) return openLbNav(zm.dataset.zoom);
   if (t.id === 'modal' || t.closest('#x')) return closeCard();
   const q = t.closest('[data-q]');
   if (q) { const [k, dlt] = [q.dataset.q.slice(0, q.dataset.q.lastIndexOf(':')), +q.dataset.q.slice(q.dataset.q.lastIndexOf(':') + 1)];
@@ -458,7 +472,7 @@ document.addEventListener('click', e => {
   const ov = t.closest('[data-ov]');
   if (ov) { const [id, val] = ov.dataset.ov.split(':'); if (val) store.over[id] = val; else delete store.over[id]; saveStore();
     if ($('#modal').classList.contains('open')) { const y = $('#modal').scrollTop; openCard(+id); $('#modal').scrollTop = y; } refreshBehind(); return; }
-  const op = t.closest('[data-open]'); if (op) return openCard(+op.dataset.open);
+  const op = t.closest('[data-open]'); if (op) return openCardNav(+op.dataset.open);
   const st = t.closest('button[data-set]'); if (st && st.classList.contains('row')) { S.f = { q: '', arch: '', type: '', own: '', sort: 'name', set: st.dataset.set }; return go('cards'); }
 });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#lb').classList.contains('open')) return closeLb(); if (e.key === 'Escape' && $('#modal').classList.contains('open')) closeCard(); });
@@ -467,6 +481,7 @@ function refreshBehind() { const y = window.scrollY; const keep = document.activ
 /* ---------- start ---------- */
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) { navigator.serviceWorker.register('sw.js').catch(() => {}); }
 loadStore();
+history.replaceState({ tab: 'dash' }, '');
 loadData().then(render).catch(err => { $('#view').innerHTML = '<div class="banner warn"><b>Could not load card data.</b> ' + esc(err.message) + '</div>'; });
 </script>
 </body>
