@@ -18,7 +18,7 @@ import urllib.request
 URL = "https://db.ygoprodeck.com/api/v7/cardinfo.php"
 UA = "hero-archive-web/1.0 (personal collection tracker; GitHub Pages)"
 HERO_ARCH = {"HERO", "Elemental HERO", "Destiny HERO", "Evil HERO", "Vision HERO", "Masked HERO",
-             "Xtra HERO", "Contrast HERO", "Heroic"}
+             "Xtra HERO", "Contrast HERO"}
 COMPANION = {"Neo-Spacian", "Neos"}
 TOKEN = re.compile(r"\bHERO\b")
 EN = re.compile(r"^(?:EN[A-Z]*|E)?\d+$")

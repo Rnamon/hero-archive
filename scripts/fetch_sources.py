@@ -20,7 +20,7 @@ UA = "hero-archive-web/1.0 (personal collection tracker; GitHub Pages)"
 # Same list as HERO_ARCHETYPES in build_data.py. The page's own file was a name search for "hero";
 # these extra queries also bring HERO-archetype cards whose names do not contain the word.
 ARCHETYPES = ["HERO", "Elemental HERO", "Destiny HERO", "Evil HERO", "Vision HERO",
-              "Masked HERO", "Xtra HERO", "Contrast HERO", "Heroic"]
+              "Masked HERO", "Xtra HERO", "Contrast HERO"]
 PAUSE = 1.5   # seconds between requests (the provider's limit is much higher)
 
 

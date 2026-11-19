@@ -98,6 +98,8 @@ def build(card_paths, sets_path, extras=None, candidates_path=None):
 
     out_cards, used_sets, warnings = [], {}, []
     for c in sorted(cards, key=lambda x: x["name"].lower()):
+        if c.get("archetype") in HEROIC_ARCHETYPES:
+            continue    # "Heroic" is a different family; the owner removed it from the app
         cat, why = classify(c, extras)
         if c["id"] in cand_ids and cat in ("noise", "review"):
             cat = "mention"
