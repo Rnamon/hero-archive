@@ -11,6 +11,7 @@ Dates are the set-level `tcg_date` joined to each printing by set name.
 import argparse
 import datetime
 import json
+import os
 import re
 import sys
 
@@ -81,8 +82,14 @@ def classify_rules(name, arch, desc):
     return "noise", 'no HERO word in the name and no HERO archetype'
 
 
-def build(card_paths, sets_path, extras=None):
+def build(card_paths, sets_path, extras=None, candidates_path=None):
     cards = load_cards(card_paths)
+    cand_ids = set()
+    if candidates_path and os.path.exists(candidates_path):
+        extra_cards = load_cards([candidates_path])
+        cand_ids = {c["id"] for c in extra_cards}
+        have = {c["id"] for c in cards}
+        cards += [c for c in extra_cards if c["id"] not in have]
     with open(sets_path, encoding="utf-8") as f:
         sets_raw = json.load(f)
     set_by_name = {}
@@ -92,6 +99,10 @@ def build(card_paths, sets_path, extras=None):
     out_cards, used_sets, warnings = [], {}, []
     for c in sorted(cards, key=lambda x: x["name"].lower()):
         cat, why = classify(c, extras)
+        if c["id"] in cand_ids and cat in ("noise", "review"):
+            cat = "mention"
+            why = ('companion archetype "%s" (not a HERO archetype)' % c.get("archetype")
+                   if c.get("archetype") in ("Neo-Spacian", "Neos") else 'effect text mentions HERO')
         printings = []
         for p in c.get("card_sets", []):
             sname, code = p["set_name"], p["set_code"]
@@ -134,10 +145,11 @@ def main():
     ap.add_argument("--sets", required=True)
     ap.add_argument("--out", required=True)
     ap.add_argument("--extras", default="extra_cards.txt")
+    ap.add_argument("--candidates", default="raw/candidates_cardinfo.json")
     ap.add_argument("--html", help="index.html whose embedded snapshot should be refreshed")
     a = ap.parse_args()
 
-    cards, used_sets, warnings, n_sets_file = build(a.cards, a.sets, load_extras(a.extras))
+    cards, used_sets, warnings, n_sets_file = build(a.cards, a.sets, load_extras(a.extras), a.candidates)
     data = {
         "schema": 1,
         "generated_at": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),

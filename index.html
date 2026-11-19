@@ -109,7 +109,7 @@ const TODAY = todayStr();
 
 /* ---------- saved user data (browser only) ---------- */
 const KEY = 'heroArchive.web.v1';
-const store = { owned: {}, over: {}, settings: { heroic: false, review: false, speed: false, support: true, related: true }, seen: null };
+const store = { owned: {}, over: {}, settings: { heroic: false, review: false, speed: false, support: true, related: true, mention: false }, seen: null };
 let canSave = true;
 function loadStore() {
   try {
@@ -157,6 +157,7 @@ function inScope(c) {
   if (c.cat === 'review') return store.settings.review;
   if (c.cat === 'support') return store.settings.support;
   if (c.cat === 'related') return store.settings.related;
+  if (c.cat === 'mention') return store.settings.mention;
   return false;
 }
 function derive(c) {
@@ -343,6 +344,7 @@ function viewReview(v) {
   v.innerHTML = `<h2>Review</h2><p class="note">The page sorts cards by simple rules. Your choices here are saved in this browser and included in the backup.</p>
     <h3>Added from your wiki list: Support (${n('support')})</h3><p class="note">Cards named in <code>extra_cards.txt</code> under Support. Counted by default. Press “Don't count” on any card that is not really related — it disappears from your lists and progress.</p>${reviewRows('support')}
     <h3>Added from your wiki list: Related (${n('related')})</h3><p class="note">Related cards (Neo-Spacians, Polymerization, and so on). Counted by default; you can switch the whole group off in Data &amp; backup, or card by card here.</p>${reviewRows('related')}
+    <h3>Found by the audit: text mentions HERO (${n('mention')})</h3><p class="note">English-printed cards that are not in a HERO archetype but whose text mentions HERO, plus Neo-Spacian/Neos cards. Not counted until you press “Count” or switch the group on in Data &amp; backup.</p>${reviewRows('mention')}
     <h3>Needs your decision (${n('review')})</h3><p class="note">These have the word “Hero” in the name, or their effect mentions a HERO card, but they are not in a HERO archetype in the data.</p>${reviewRows('review')}
     <h3>Heroic family (${n('heroic')})</h3><p class="note">Archetype “Heroic” — a different family from HERO. Not counted unless you turn it on in Data &amp; backup, or choose cards one by one.</p>${reviewRows('heroic')}
     <h3>Probably not HERO (${n('noise')})</h3><p class="note">No HERO word as a word in the name and no HERO archetype — most likely in the file only because the name contains the letters “hero” or “hire”.</p>${reviewRows('noise')}`;
@@ -358,6 +360,7 @@ function viewData(v) {
     <div class="panel"><b>Scope</b>
       <label class="chk"><input type="checkbox" data-set="support" ${s.support ? 'checked' : ''}><span>Count wiki “Support” cards that you added by name (${cats.support || 0})</span></label>
       <label class="chk"><input type="checkbox" data-set="related" ${s.related ? 'checked' : ''}><span>Count wiki “Related” cards that you added by name (${cats.related || 0})</span></label>
+      <label class="chk"><input type="checkbox" data-set="mention" ${s.mention ? 'checked' : ''}><span>Count cards found by the audit whose text mentions HERO (${cats.mention || 0})</span></label>
       <label class="chk"><input type="checkbox" data-set="heroic" ${s.heroic ? 'checked' : ''}><span>Count the “Heroic” family (${cats.heroic || 0} cards) — a different archetype from HERO</span></label>
       <label class="chk"><input type="checkbox" data-set="review" ${s.review ? 'checked' : ''}><span>Count the cards that need review (${cats.review || 0}) — decide them one by one in Review instead if you prefer</span></label>
       <label class="chk"><input type="checkbox" data-set="speed" ${s.speed ? 'checked' : ''}><span>Count Speed Duel printings (English, but a separate product line)</span></label></div>
@@ -365,7 +368,7 @@ function viewData(v) {
     <div class="panel"><ul class="plain">
       <li>Loaded from: <b>${esc(S.source)}</b>${S.fetchNote ? ' <span class="note">(' + esc(S.fetchNote) + ')</span>' : ''}</li>
       <li>Data file built: <b>${esc(d.generated_at)}</b> · rules ${esc(d.rule_version)}</li>
-      <li>Cards in the file: <b>${S.cards.length}</b> (HERO ${cats.hero || 0}, wiki support ${cats.support || 0}, wiki related ${cats.related || 0}, Heroic ${cats.heroic || 0}, needs review ${cats.review || 0}, probably not HERO ${cats.noise || 0})</li>
+      <li>Cards in the file: <b>${S.cards.length}</b> (HERO ${cats.hero || 0}, wiki support ${cats.support || 0}, wiki related ${cats.related || 0}, audit candidates ${cats.mention || 0}, Heroic ${cats.heroic || 0}, needs review ${cats.review || 0}, probably not HERO ${cats.noise || 0})</li>
       <li>Printings: <b>${tp}</b> — released ${st.released || 0}, upcoming ${st.upcoming || 0}, date unknown ${st.unknown || 0}, Speed Duel ${st.speed || 0}, not English ${st.excluded || 0}</li>
       <li>Sets used: <b>${Object.keys(d.sets).length}</b> of ${d.source.sets_in_file} in the sets file</li>
       <li>Cards with no printing at all in the data: <b>${noPr.length}</b>${noPr.length ? ' — ' + noPr.map(c => esc(c.name)).join(', ') : ''}</li></ul>
@@ -408,7 +411,7 @@ async function importBackup(file, merge) {
     const over = {}; for (const [k, o] of Object.entries(j.over || {})) if (o === 'in' || o === 'out') over[k] = o;
     if (merge) { for (const [k, n] of Object.entries(owned)) store.owned[k] = Math.max(store.owned[k] || 0, n); Object.assign(store.over, over); }
     else { store.owned = owned; store.over = over; }
-    if (j.settings) for (const k of ['heroic', 'review', 'speed', 'support', 'related']) if (typeof j.settings[k] === 'boolean') store.settings[k] = j.settings[k];
+    if (j.settings) for (const k of ['heroic', 'review', 'speed', 'support', 'related', 'mention']) if (typeof j.settings[k] === 'boolean') store.settings[k] = j.settings[k];
     saveStore(); render(); const m = $('#bkmsg'); if (m) m.textContent = 'Imported ' + Object.keys(owned).length + ' owned printing(s).';
   } catch (e) { msg.textContent = 'Import failed: ' + e.message; }
 }

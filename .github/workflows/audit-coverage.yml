@@ -1,0 +1,29 @@
+# Manual only: downloads the FULL card database once, writes docs/COVERAGE_AUDIT.md and the candidate list.
+# NOT TESTED yet.
+name: Audit card coverage
+on:
+  workflow_dispatch: {}
+permissions:
+  contents: write
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Audit against the full database
+        run: python3 -I scripts/audit_full.py
+      - name: Refresh raw files and images (includes candidates)
+        run: python3 -I scripts/fetch_sources.py raw
+      - name: Rebuild data file
+        run: python3 -I scripts/build_data.py --cards raw/cardinfo.json --sets raw/cardsets.json --out data/hero-data.json --html index.html
+      - name: Commit
+        run: |
+          git config user.name "hero-archive-bot"
+          git config user.email "actions@users.noreply.github.com"
+          if [ -z "$(git status --porcelain)" ]; then echo "No change"; exit 0; fi
+          git add -A
+          git commit -m "Coverage audit and candidate cards"
+          git push

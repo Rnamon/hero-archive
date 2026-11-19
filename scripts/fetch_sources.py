@@ -57,7 +57,12 @@ def main(outdir):
     with open(os.path.join(outdir, "cardinfo.json"), "w", encoding="utf-8") as f:
         json.dump({"data": list(merged.values())}, f, ensure_ascii=False)
     print("total unique cards:", len(merged))
-    download_images(merged.values(), os.path.join(os.path.dirname(os.path.abspath(outdir)), "images"))
+    cards_for_images = list(merged.values())
+    cand = os.path.join(outdir, "candidates_cardinfo.json")
+    if os.path.exists(cand):
+        with open(cand, encoding="utf-8") as f:
+            cards_for_images += json.load(f)["data"]
+    download_images(cards_for_images, os.path.join(os.path.dirname(os.path.abspath(outdir)), "images"))
 
 
 def _norm(s):
