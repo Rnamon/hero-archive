@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>THE HERO ARCHIVE</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0a0f1d">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
 <style>
 :root{--bg:#0d1322;--panel:#151d33;--panel2:#1b2542;--line:#2a375c;--text:#e9edf7;--mute:#9aa7c7;--gold:#f2b84b;--blue:#58a8ff;--green:#4cd08a;--red:#ff7a7a;--amber:#ffcf5c}
 *{box-sizing:border-box}
@@ -460,6 +464,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#lb').c
 function refreshBehind() { const y = window.scrollY; const keep = document.activeElement; render(); window.scrollTo(0, y); }
 
 /* ---------- start ---------- */
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) { navigator.serviceWorker.register('sw.js').catch(() => {}); }
 loadStore();
 loadData().then(render).catch(err => { $('#view').innerHTML = '<div class="banner warn"><b>Could not load card data.</b> ' + esc(err.message) + '</div>'; });
 </script>
